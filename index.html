@@ -130,20 +130,44 @@
     font-size: 13px;
     opacity: .55;
   }
+
+  /* 用户资料按钮 */
+  .profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 20px;
+    transition: background 0.2s;
+    margin-left: auto;
+  }
+  .profile-btn:hover { background: #f0f0f0; }
+  .nickname {
+    font-size: 14px;
+    font-weight: 600;
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .avatar {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: var(--blue);
+    background-color: var(--blue);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 14px;
-    margin-left: auto;
     flex: 0 0 auto;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
+
   .content { padding: 26px 20px 60px; max-width: 1080px; margin: 0 auto; }
   .section-title { font-size: 17px; font-weight: 700; margin: 0 0 14px; }
 
@@ -194,8 +218,99 @@
     gap: 16px;
     margin-top: 16px;
   }
-  /* 覆盖网格内的卡片宽度限制 */
   .game-grid .card-link { max-width: none; }
+
+  /* ==================== 修改资料弹窗 ==================== */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-box {
+    background: #fff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 320px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .modal-header h3 { margin: 0; font-size: 18px; }
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--gray);
+    cursor: pointer;
+  }
+  .avatar-edit-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+  }
+  .avatar-preview {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: var(--blue);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    background-size: cover;
+    background-position: center;
+  }
+  .btn-upload {
+    background: #f0f0f0;
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .modal-box .field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--gray);
+  }
+  .modal-box .field input {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    outline: none;
+  }
+  .modal-box .field input:focus { border-color: var(--blue); }
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .btn-cancel, .btn-save {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-cancel { background: #f0f0f0; color: var(--dark); }
+  .btn-save { background: var(--dark); color: #fff; }
 
   @media (max-width: 480px) {
     .game-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -247,7 +362,12 @@
       <div class="search">
         <input type="text" placeholder="搜索" />
       </div>
-      <div class="avatar">U</div>
+      
+      <!-- 用户信息区（点击修改资料） -->
+      <div class="profile-btn" id="profileBtn">
+        <div class="avatar" id="avatarDisplay">玩</div>
+        <span class="nickname" id="nicknameDisplay">玩家</span>
+      </div>
     </header>
 
     <main class="content">
@@ -266,13 +386,39 @@
       <!-- 为你推荐 (100 个游戏) -->
       <h2 class="section-title" style="margin-top: 36px;">为你推荐</h2>
       <div class="game-grid" id="gameGrid">
-        <!-- 由 JS 自动生成 100 个虚拟游戏卡片 -->
+        <!-- 由 JS 自动生成 100 个中文游戏卡片 -->
       </div>
     </main>
   </div>
 
+  <!-- ==================== 修改资料弹窗 ==================== -->
+  <div id="editProfileModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>编辑资料</h3>
+        <button class="close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="avatar-edit-area">
+          <div class="avatar-preview" id="avatarPreview">玩</div>
+          <button class="btn-upload" id="uploadBtn">更换头像</button>
+          <!-- 隐藏的文件上传组件 -->
+          <input type="file" id="avatarFileInput" accept="image/*" style="display: none;">
+        </div>
+        <div class="field">
+          <label>昵称</label>
+          <input type="text" id="nicknameInput" placeholder="请输入新昵称" maxlength="10">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="cancelBtn">取消</button>
+        <button class="btn-save" id="saveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
 <script>
-  // 1. 登录逻辑
+  // ================= 1. 登录逻辑 =================
   (function () {
     var loginForm = document.getElementById("loginForm");
     var loginBtn = document.getElementById("loginBtn");
@@ -293,35 +439,34 @@
     });
   })();
 
-  // 2. 生成 100 个虚拟游戏
+  // ================= 2. 生成 100 个中文虚拟游戏 =================
   (function() {
     const gameNames = [
-      "Adopt Me!", "Tower of Hell", "Brookhaven RP", "Blox Fruits", "Piggy", 
-      "Doors", "Arsenal", "Bedwars", "Bloxburg", "Da Hood", 
-      "Slap Battles", "Pet Simulator X", "Rainbow Friends", "Royale High", "Murder Mystery 2", 
-      "Jailbreak", "MeepCity", "Bee Swarm Simulator", "Anime Adventures", "Doomspire Brickbattle",
-      "Natural Disaster Survival", "Work at a Pizza Place", "Flee the Facility", "Tycoon", "Obby", 
-      "Parkour", "The Mimic", "Evade", "Scary Sushi", "Sonic.exe", 
-      "Rate My Avatar", "Pls Donate", "Item Asylum", "Combat Warriors", "Criminality", 
-      "Deepwoken", "GPO", "Jujutsu Shenanigans", "A Dusty Trip", "Drive World", 
-      "Greenville", "Southwest Florida", "Emergency Response", "Ro-Ghoul", "Demon Slayer RPG 2", 
-      "Project Slayers", "Anime Last Stand", "All Star Tower", "Tower Defense", "Ninja Legends", 
-      "Clicker Simulator", "Mining Simulator", "Treasure Quest", "Islands", "Skyblock", 
-      "Hyperspace", "Starving Artists", "Free Draw", "Speed Run 4", "Flood Escape 2", 
-      "Epic Minigames", "Robeats", "Funky Friday", "Friday Night Bloxxin", "Rhythm Masters", 
-      "Livetopia", "Berry Avenue", "Neighborhood RP", "Club Iris", "Sakura High", 
-      "Mansion RP", "PLS DONATE", "Anime Vanguards", "Arm Wrestle Simulator", "Steal a Brainrot", 
-      "Grow a Garden", "Squid Game", "Squid Game X", "Squid Game Tycoon", "Hunter Exam", 
-      "Project Mugetsu", "Type Soul", "Peroxide", "Heroes Online", "Anime Battle Arena", 
-      "Anime Fighting Simulator", "Rarity Hunt", "Mining Tycoon", "Theme Park Tycoon 2", "Restaurant Tycoon 2", 
-      "Retail Tycoon 2", "Airport Tycoon", "City Tycoon", "Zoo Tycoon", "Aquarium Tycoon", 
-      "Lumber Tycoon 2", "Pizza Tycoon", "Grocery Tycoon", "Hotel Tycoon", "Farm Tycoon"
+      "领养我吧", "地狱塔", "布鲁克海文 RP", "海贼王", "小猪佩奇",
+      "门 (Doors)", "军火库", "起床战争", "布鲁克堡", "街头",
+      "巴掌大乱斗", "宠物模拟器 X", "彩虹朋友", "皇家高中", "谋杀之谜 2",
+      "越狱", "米普城", "蜜蜂模拟器", "动漫大冒险", "末日尖塔",
+      "自然灾害生存", "披萨店打工", "逃离设施", "商业大亨", "跑酷",
+      "障碍赛", "模仿者", "躲避", "恐怖寿司", "索尼克.exe",
+      "评价我的头像", "请捐赠", "道具收容所", "战斗勇士", "犯罪都市",
+      "深海觉醒", "大海贼时代", "咒术回战", "尘土之旅", "驾驶世界",
+      "绿谷", "佛罗里达西南部", "紧急救援", "东京喰种", "鬼灭之刃 RPG 2",
+      "斩鬼计划", "动漫最终防线", "全明星塔防", "塔防", "忍者传说",
+      "点击模拟器", "挖矿模拟器", "寻宝探险", "岛屿", "空岛生存",
+      "超空间", "饥饿艺术家", "自由绘画", "极速跑酷 4", "洪水逃生 2",
+      "史诗小游戏", "音乐节拍", "放克星期五", "周五夜放克", "节奏大师",
+      "生活小镇", "浆果大道", "邻里 RP", "鸢尾花俱乐部", "樱花高中",
+      "豪宅 RP", "PLS DONATE", "动漫先锋", "掰手腕模拟器", "偷走脑残",
+      "种植花园", "鱿鱼游戏", "鱿鱼游戏 X", "鱿鱼游戏大亨", "猎人考试",
+      "无月计划", "灵魂打字", "死神", "英雄在线", "动漫格斗场",
+      "动漫格斗模拟器", "稀有度狩猎", "挖矿大亨", "主题公园大亨 2", "餐厅大亨 2",
+      "零售大亨 2", "机场大亨", "城市大亨", "动物园大亨", "水族馆大亨",
+      "伐木大亨 2", "披萨大亨", "超市大亨", "酒店大亨", "农场大亨"
     ];
 
     const grid = document.getElementById("gameGrid");
     if (!grid) return;
 
-    // 循环生成 100 个卡片
     gameNames.forEach(function(name) {
       const card = document.createElement("a");
       card.href = "#";
@@ -338,7 +483,6 @@
       grid.appendChild(card);
     });
 
-    // 给所有虚拟游戏绑定点击提示
     document.addEventListener("click", function(e) {
       const isVirtual = e.target.closest(".virtual-game");
       if (isVirtual) {
@@ -346,6 +490,101 @@
         alert("该游戏正在加载中，请稍后再试！");
       }
     });
+  })();
+
+  // ================= 3. 修改资料与头像逻辑 =================
+  (function() {
+    // 默认用户数据
+    let userData = {
+      nickname: '玩家',
+      avatar: '' // 为空则显示文字首字母
+    };
+
+    // 读取本地保存的数据
+    function loadUserData() {
+      const saved = localStorage.getItem('roblox_user_data');
+      if (saved) {
+        try { userData = JSON.parse(saved); } catch(e) {}
+      }
+      updateProfileUI();
+    }
+
+    // 更新页面 UI
+    function updateProfileUI() {
+      // 更新顶部栏
+      document.getElementById('nicknameDisplay').textContent = userData.nickname;
+      const avatarEl = document.getElementById('avatarDisplay');
+      
+      // 更新头像预览
+      const avatarPreviewEl = document.getElementById('avatarPreview');
+
+      [avatarEl, avatarPreviewEl].forEach(el => {
+        if (userData.avatar) {
+          el.style.backgroundImage = `url(${userData.avatar})`;
+          el.textContent = ''; // 有图片时清空文字
+        } else {
+          el.style.backgroundImage = 'none';
+          el.textContent = userData.nickname.charAt(0) || '玩'; // 没图片时显示昵称首字
+        }
+      });
+    }
+
+    // 暂存预览头像（用户未点保存前）
+    let tempAvatarBase64 = userData.avatar;
+
+    // 打开弹窗
+    document.getElementById('profileBtn').addEventListener('click', () => {
+      document.getElementById('nicknameInput').value = userData.nickname;
+      tempAvatarBase64 = userData.avatar;
+      updateProfileUI();
+      document.getElementById('editProfileModal').classList.remove('hidden');
+    });
+
+    // 关闭弹窗
+    function closeModal() {
+      document.getElementById('editProfileModal').classList.add('hidden');
+    }
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+
+    // 点击更换头像按钮，触发隐藏的文件输入框
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+      document.getElementById('avatarFileInput').click();
+    });
+
+    // 选择图片文件后读取为 Base64
+    document.getElementById('avatarFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        tempAvatarBase64 = event.target.result;
+        const preview = document.getElementById('avatarPreview');
+        preview.style.backgroundImage = `url(${tempAvatarBase64})`;
+        preview.textContent = '';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 点击保存
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const newName = document.getElementById('nicknameInput').value.trim();
+      if (!newName) {
+        alert('昵称不能为空');
+        return;
+      }
+      userData.nickname = newName;
+      userData.avatar = tempAvatarBase64;
+      
+      // 存入本地
+      localStorage.setItem('roblox_user_data', JSON.stringify(userData));
+      
+      updateProfileUI();
+      closeModal();
+    });
+
+    // 初始化加载
+    loadUserData();
   })();
 </script>
 </body>
